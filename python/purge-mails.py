@@ -15,24 +15,35 @@ def purgemails(server, port, login, password, folder="Zdelete", maxAge=30):
     box = imaplib.IMAP4_SSL(server,port)
     box.login(login,password)
     box.select(folder)
-    print "SUCESS: Purging mails from {0}:{1} server {2} account and {3} folder".format(server, port, login, folder)
+    print "SUCCESS: Purging mails from {0}:{1} server {2} account and {3} folder".format(server, port, login, folder)
     typ, data = box.search(None, '(BEFORE {0})'.format(before_date))
     if data != ['']:
         count = data[0].split()[-1]
-        print "SUCESS: Found {0} mails before date {1}".format(count, before_date_friendly)
+        print "SUCCESS: Found {0} mails before date {1}".format(count, before_date_friendly)
         box.store("1:{0}".format(count), '+FLAGS', '\\Deleted')
     else:
-        print "SUCESS: No expired messages found before date {0}.".format(before_date_friendly)
+        print "SUCCESS: No expired messages found before date {0}.".format(before_date_friendly)
 
-    print "SUCESS: Expunging"
+    print "SUCCESS: Expunging"
     box.expunge()
     box.close()
     box.logout()
-    print "SUCESS: Deleted mails before date {0}".format(before_date_friendly)
+    print "SUCCESS: Deleted mails before date {0}".format(before_date_friendly)
 
 if __name__ == "__main__":
-    config = ConfigParser.SafeConfigParser()
-    config.readfp(open(os.path.expanduser('~/purge-mails.cfg')))
+    configLocations = [ os.path.expanduser('~/purge-mails.cfg'), '/etc/purge-mails.cfg' ]
+
+    config = None
+    for confFile in configLocations:
+        print "SUCCESS: Searching configuration in {0}".format(confFile)
+        if os.path.isfile(confFile):
+            config = ConfigParser.SafeConfigParser()
+            config.readfp(open(confFile))
+            break
+
+    if config is None:
+        print "ERROR: Configuration should be present in one of the folders."
+        exit(1)
 
     for section in config.sections():
         server = config.get(section, 'server')
